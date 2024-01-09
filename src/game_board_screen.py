@@ -6,6 +6,13 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 YELLOW = (255, 255, 0)
 CELL_SIZE = 80
+FOOTER_COLOR = (0,0,0,50)
+SCORE_COLOR = "gold"
+
+TEXT_FONTSIZE = 35
+PLAYERNAME_FONTSIZE= 50
+BUTTON_COLOR = "white"
+BUTTON_TEXT_COLOR = "white"
 
 ACTIVE_PLAYER_NAME_COLOR = 'light green'
 INACTIVE_PLAYER_NAME_COLOR = 'light gray'
@@ -15,6 +22,26 @@ BUTTON_COLOR_2 = RED
 
 FOOTER_HEIGHT = 75
 
+class Button:
+
+    def __init__(self, color, text_color, text_size, width, height, text):
+        self.color = color
+        self.width = width
+        self.height = height
+        self.text = text
+
+        self.text_font = pygame.font.Font(None, text_size)
+        self.label = self.text_font.render(text, False, text_color)
+        self.surf = pygame.Surface((width,height),pygame.SRCALPHA)
+        pygame.draw.rect(self.surf, color, (0, 0, width, height),2, border_radius=15)
+        self.rect = self.surf.get_rect()
+        self.surf.blit(self.label, self.label.get_rect(center=self.surf.get_rect().center))
+
+    def draw(self, surf: pygame.Surface, location: tuple[int,int]):
+        self.rect = self.surf.get_rect(topleft=location)
+        surf.blit(self.surf, self.rect)
+
+
 
 class GameScreen:
     game_state = GameState()
@@ -22,7 +49,11 @@ class GameScreen:
     board_columns = len(GameState.board[0])
     mouse_pressed = False
 
+    player_1_surf = None
+    player_2_surf = None
+
     def __init__(self, screen: pygame.Surface):
+        self.text_font = pygame.font.Font(None, TEXT_FONTSIZE)
         self.background = pygame.image.load("../img/cloud_background.jpg").convert()
         self.cup_image = pygame.image.load("../img/cup.png").convert_alpha()
         self.cup_image = pygame.transform.scale(self.cup_image, (self.cup_image.get_size()[0]/6, self.cup_image.get_size()[1]/6))
@@ -34,36 +65,45 @@ class GameScreen:
         self.above_game_board_surf = pygame.Surface((CELL_SIZE * self.board_columns, CELL_SIZE), pygame.SRCALPHA)
         self.above_game_board_rect = self.above_game_board_surf.get_rect(bottomleft=self.game_board_rect.topleft)
 
-        self.player_names = pygame.font.Font(None, 50)
-        self.player_1_surf = self.player_names.render(self.game_state.player_1_name, True, INACTIVE_PLAYER_NAME_COLOR)
+        self.player_names_font = pygame.font.Font(None, PLAYERNAME_FONTSIZE)
+
+        self.player_1_surf = pygame.Surface((200,100),pygame.SRCALPHA)
+        self.player_2_surf = pygame.Surface((200, 100), pygame.SRCALPHA)
         self.player_1_rect = self.player_1_surf.get_rect(topleft=(30, 20))
-        self.player_2_surf = self.player_names.render(self.game_state.player_2_name, True, INACTIVE_PLAYER_NAME_COLOR)
         self.player_2_rect = self.player_2_surf.get_rect(topright=(self.screen.get_width() - 30, 20))
 
-        self.footer = pygame.Surface((screen.get_size()[0],FOOTER_HEIGHT))
-        self.footer.fill('light gray')
+        self.footer = pygame.Surface((screen.get_size()[0],FOOTER_HEIGHT),pygame.SRCALPHA)
+        self.footer.fill(FOOTER_COLOR)
         self.footer_location = (0, self.screen.get_size()[1] - self.footer.get_height())
-        self.button_width, self.button_height = 150, 50
-        self.exit_button_rect = pygame.Rect(0, 0, self.button_width, self.button_height)
-        self.new_game_button_rect = pygame.Rect(200, 0, self.button_width, self.button_height)
-        font = pygame.font.Font(None, 36)
-        self.exit_button_label = font.render("Exit", True, (0, 0, 0))
-        self.new_game_button_label = font.render("New game", True, (0, 0, 0))
+
+        self.exit_button = Button(BUTTON_COLOR,BUTTON_TEXT_COLOR,TEXT_FONTSIZE,150,50,"Exit")
+        self.new_game_button = Button(BUTTON_COLOR, BUTTON_TEXT_COLOR, TEXT_FONTSIZE, 150, 50, "New Game")
 
 
-    def update_player_data(self):
+    def draw_player_data(self):
+        self.player_1_surf = pygame.Surface((200, 60), pygame.SRCALPHA)
+        self.player_2_surf = pygame.Surface((200, 60), pygame.SRCALPHA)
+
         if self.game_state.player_turn == 1:
-            background_rect = self.player_1_rect.copy()
-            background_rect = background_rect.scale_by(1.1,1.1)
-            background_surf = pygame.Surface((background_rect.width,background_rect.height), pygame.SRCALPHA)
-            pygame.draw.rect(background_surf,"gold",(0,0,background_rect.width,background_rect.height), border_radius=20)
-
-            self.player_1_surf = self.player_names.render(self.game_state.player_1_name, True, ACTIVE_PLAYER_NAME_COLOR)
-            self.player_2_surf = self.player_names.render(self.game_state.player_2_name, True, INACTIVE_PLAYER_NAME_COLOR)
+            player_1_name_surf = self.player_names_font.render(self.game_state.player_1_name, True, ACTIVE_PLAYER_NAME_COLOR)
+            player_2_name_surf = self.player_names_font.render(self.game_state.player_2_name, True, INACTIVE_PLAYER_NAME_COLOR)
         else:
-            self.player_1_surf = self.player_names.render(self.game_state.player_1_name, True, INACTIVE_PLAYER_NAME_COLOR)
-            self.player_2_surf = self.player_names.render(self.game_state.player_2_name, True, ACTIVE_PLAYER_NAME_COLOR)
-            
+            player_1_name_surf = self.player_names_font.render(self.game_state.player_1_name, True, INACTIVE_PLAYER_NAME_COLOR)
+            player_2_name_surf = self.player_names_font.render(self.game_state.player_2_name, True, ACTIVE_PLAYER_NAME_COLOR)
+
+        player_1_score = self.text_font.render(f"Wins: {self.game_state.player_1_score}",True,SCORE_COLOR)
+        player_1_score_rect = player_1_score.get_rect(midbottom=self.player_1_surf.get_rect().midbottom)
+        player_2_score = self.text_font.render(f"Wins: {self.game_state.player_2_score}",True,SCORE_COLOR)
+        player_2_score_rect = player_2_score.get_rect(midbottom=self.player_2_surf.get_rect().midbottom)
+
+        self.__draw_button(self.player_1_surf, 1, (15, 15), 15)
+        self.__draw_button(self.player_2_surf, 2, (15, 15), 15)
+        self.player_1_surf.blit(player_1_name_surf,(40,0))
+        self.player_1_surf.blit(player_1_score, player_1_score_rect)
+
+        self.player_2_surf.blit(player_2_name_surf, (40, 0))
+        self.player_2_surf.blit(player_2_score, player_2_score_rect)
+
 
     def draw_game_board(self,win_condition:list[(int,int)]):
         surface = self.game_board_surf
@@ -98,20 +138,27 @@ class GameScreen:
         self.above_game_board_surf.fill((0, 0, 0, 0))
         if self.game_state.is_running():
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            if mouse_y >= self.above_game_board_rect.topleft[1] and mouse_y <= self.game_board_rect.bottomleft[1]:
+            if mouse_y >= self.above_game_board_rect.topleft[1] and mouse_y <= self.above_game_board_rect.bottomleft[1]:
                 relative_x_loc = mouse_x - self.above_game_board_rect.topleft[0]
                 if relative_x_loc >=0 and relative_x_loc <= self.above_game_board_rect.width:
                     active_col = relative_x_loc // CELL_SIZE
                     if mousebutton_up:
                         self.game_state.drop_button(active_col)
                     self.__draw_button(self.above_game_board_surf, self.game_state.player_turn,(active_col * CELL_SIZE + CELL_SIZE // 2,CELL_SIZE // 2), CELL_SIZE // 2 - 5)
+            else:
+                if self.game_state.player_turn == 1:
+                    self.__draw_button(self.above_game_board_surf, self.game_state.player_turn,(CELL_SIZE // 2,CELL_SIZE // 2), CELL_SIZE // 2 - 5)
+                else:
+                    self.__draw_button(self.above_game_board_surf, self.game_state.player_turn,
+                                       (6*CELL_SIZE+CELL_SIZE // 2, CELL_SIZE // 2), CELL_SIZE // 2 - 5)
+
         elif self.game_state.is_finished():
             self.above_game_board_surf.blit(self.cup_image,(0,0))
             if self.game_state.player_turn == 1:
                 winner_name = self.game_state.player_1_name
             else:
                 winner_name = self.game_state.player_2_name
-            winner_name_surf = self.player_names.render(f"{winner_name} Has Won!",True,"gold")
+            winner_name_surf = self.player_names_font.render(f"{winner_name} Has Won!",True,"gold")
             self.above_game_board_surf.blit(winner_name_surf, (self.cup_image.get_size()[0]+10,20))
 
     def __draw_button(self, surface : pygame.Surface, player: int, center: (int,int), size:int,winning_button=False):
@@ -124,25 +171,25 @@ class GameScreen:
 
         if winning_button:
             pygame.draw.circle(surface, "dark orange", center, size)
-            pygame.draw.circle(surface, button_color, center, size - 5)
+            pygame.draw.circle(surface, button_color, center, size-int(size / 6))
         else:
             pygame.draw.circle(surface, button_color, center, size)
-            pygame.draw.circle(surface, "dark gray", center, size - 5, 2)
+            pygame.draw.circle(surface, "dark gray", center, size-int(size / 6), 2)
 
 
     def draw_menu(self,events):
-        pygame.draw.rect(self.footer,"red",self.exit_button_rect)
-        self.footer.blit(self.exit_button_label,(self.exit_button_rect.x + 10, self.exit_button_rect.y + 10))
-        pygame.draw.rect(self.footer,"red", self.new_game_button_rect)
-        self.footer.blit(self.new_game_button_label, (self.new_game_button_rect.x + 10, self.new_game_button_rect.y + 10))
+        height_offset = int((self.footer.get_rect().height-self.exit_button.height)/2)
+        width_center = int((self.footer.get_rect().width-self.exit_button.width)/2)
+        self.exit_button.draw(self.footer,(width_center-100,height_offset))
+        self.new_game_button.draw(self.footer,(width_center+100,height_offset))
 
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = (pygame.mouse.get_pos()[0]-self.footer_location[0], pygame.mouse.get_pos()[1]-self.footer_location[1])
-                if self.exit_button_rect.collidepoint(mouse_pos):
+                if self.exit_button.rect.collidepoint(mouse_pos):
                     pygame.quit()
                     exit()
-                elif self.new_game_button_rect.collidepoint(mouse_pos):
+                elif self.new_game_button.rect.collidepoint(mouse_pos):
                     self.game_state.new_game()
 
 
@@ -158,7 +205,7 @@ class GameScreen:
         self.draw_game_board(win_condition)
 
         self.update_chiplocation(pygame.MOUSEBUTTONUP in [t.type for t in events])
-        self.update_player_data()
+        self.draw_player_data()
 
         self.screen.blit(self.background, (0, 0))
         self.screen.blit(self.footer, self.footer_location)

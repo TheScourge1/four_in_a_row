@@ -16,6 +16,9 @@ class GameState:
     player_1_name = "Player 1"
     player_2_name = "Player 2"
 
+    player_1_score = 0
+    player_2_score = 0
+
     game_state = States.RUNNING
 
     def is_running(self):
@@ -30,40 +33,47 @@ class GameState:
         self.player_turn = 1
 
     def check_finished_game(self) -> list[(int, int)]:
+        win_range = []
+
         for i in range(0, self.board.shape[0]-3):
             for j in range(0, self.board.shape[1]):
                 if (self.board[i][j] != 0 and
                         self.board[i][j] == self.board[i+1][j] and
                         self.board[i][j] == self.board[i+2][j] and
                         self.board[i][j] == self.board[i+3][j]):
-                    self.game_state = States.FINISHED
-                    return [(i+k,j) for k in range(0,4)]
+                    win_range = [(i+k,j) for k in range(0,4)]
         for i in range(0, self.board.shape[0]):
             for j in range(0, self.board.shape[1]-3):
                 if (self.board[i][j] != 0 and
                         self.board[i][j] == self.board[i][j+1] and
                         self.board[i][j] == self.board[i][j+2] and
                         self.board[i][j] == self.board[i][j+3]):
-                    self.game_state = States.FINISHED
-                    return [(i, j+k) for k in range(0, 4)]
+                    win_range = [(i, j+k) for k in range(0, 4)]
         for i in range(3, self.board.shape[0]):
             for j in range(0, self.board.shape[1]-3):
                 if (self.board[i][j] != 0 and
                         self.board[i][j] == self.board[i-1][j + 1] and
                         self.board[i][j] == self.board[i-2][j + 2] and
                         self.board[i][j] == self.board[i-3][j + 3]):
-                    self.game_state = States.FINISHED
-                    return [(i - k, j + k) for k in range(0, 4)]
+                    win_range = [(i - k, j + k) for k in range(0, 4)]
         for i in range(0, self.board.shape[0] - 3):
             for j in range(0, self.board.shape[1] - 3):
                 if (self.board[i][j] != 0 and
                         self.board[i][j] == self.board[i + 1][j + 1] and
                         self.board[i][j] == self.board[i + 2][j + 2] and
                         self.board[i][j] == self.board[i + 3][j + 3]):
-                    self.game_state = States.FINISHED
-                    return [(i + k, j + k) for k in range(0, 4)]
+                    win_range = [(i + k, j + k) for k in range(0, 4)]
 
-        return []
+        if self.game_state != States.FINISHED and len(win_range) > 0:
+            self.__set_finished()
+        return win_range
+
+    def __set_finished(self):
+        self.game_state = States.FINISHED
+        if self.player_turn == 1:
+            self.player_1_score += 1
+        else:
+            self.player_2_score += 1
 
 
     #return the vertical position until where to drop

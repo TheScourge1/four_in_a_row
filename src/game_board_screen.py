@@ -22,8 +22,8 @@ BUTTON_COLOR_2 = RED
 
 FOOTER_HEIGHT = 75
 
-class Button:
 
+class Button:
     def __init__(self, color, text_color, text_size, width, height, text):
         self.color = color
         self.width = width
@@ -40,7 +40,6 @@ class Button:
     def draw(self, surf: pygame.Surface, location: tuple[int,int]):
         self.rect = self.surf.get_rect(topleft=location)
         surf.blit(self.surf, self.rect)
-
 
 
 class GameScreen:
@@ -85,15 +84,15 @@ class GameScreen:
         self.player_2_surf = pygame.Surface((200, 60), pygame.SRCALPHA)
 
         if self.game_state.player_turn == 1:
-            player_1_name_surf = self.player_names_font.render(self.game_state.player_1_name, True, ACTIVE_PLAYER_NAME_COLOR)
-            player_2_name_surf = self.player_names_font.render(self.game_state.player_2_name, True, INACTIVE_PLAYER_NAME_COLOR)
+            player_1_name_surf = self.player_names_font.render(self.game_state.get_player_name(1), True, ACTIVE_PLAYER_NAME_COLOR)
+            player_2_name_surf = self.player_names_font.render(self.game_state.get_player_name(2), True, INACTIVE_PLAYER_NAME_COLOR)
         else:
-            player_1_name_surf = self.player_names_font.render(self.game_state.player_1_name, True, INACTIVE_PLAYER_NAME_COLOR)
-            player_2_name_surf = self.player_names_font.render(self.game_state.player_2_name, True, ACTIVE_PLAYER_NAME_COLOR)
+            player_1_name_surf = self.player_names_font.render(self.game_state.get_player_name(1), True, INACTIVE_PLAYER_NAME_COLOR)
+            player_2_name_surf = self.player_names_font.render(self.game_state.get_player_name(2), True, ACTIVE_PLAYER_NAME_COLOR)
 
-        player_1_score = self.text_font.render(f"Wins: {self.game_state.player_1_score}",True,SCORE_COLOR)
+        player_1_score = self.text_font.render(f"Wins: {self.game_state.get_score(1)}",True,SCORE_COLOR)
         player_1_score_rect = player_1_score.get_rect(midbottom=self.player_1_surf.get_rect().midbottom)
-        player_2_score = self.text_font.render(f"Wins: {self.game_state.player_2_score}",True,SCORE_COLOR)
+        player_2_score = self.text_font.render(f"Wins: {self.game_state.get_score(2)}",True,SCORE_COLOR)
         player_2_score_rect = player_2_score.get_rect(midbottom=self.player_2_surf.get_rect().midbottom)
 
         self.__draw_button(self.player_1_surf, 1, (15, 15), 15)
@@ -136,7 +135,7 @@ class GameScreen:
 
     def update_chiplocation(self, mousebutton_up:bool):
         self.above_game_board_surf.fill((0, 0, 0, 0))
-        if self.game_state.is_running():
+        if self.game_state.is_running() and self.game_state.human_player_move():
             mouse_x, mouse_y = pygame.mouse.get_pos()
             if mouse_y >= self.above_game_board_rect.topleft[1] and mouse_y <= self.above_game_board_rect.bottomleft[1]:
                 relative_x_loc = mouse_x - self.above_game_board_rect.topleft[0]
@@ -154,12 +153,12 @@ class GameScreen:
 
         elif self.game_state.is_finished():
             self.above_game_board_surf.blit(self.cup_image,(0,0))
-            if self.game_state.player_turn == 1:
-                winner_name = self.game_state.player_1_name
-            else:
-                winner_name = self.game_state.player_2_name
+            winner_name = self.game_state.get_player_name(self.game_state.player_turn)
             winner_name_surf = self.player_names_font.render(f"{winner_name} Has Won!",True,"gold")
             self.above_game_board_surf.blit(winner_name_surf, (self.cup_image.get_size()[0]+10,20))
+        elif self.game_state.is_draw():
+            winner_name_surf = self.player_names_font.render("Draw!",True,"gold")
+            self.above_game_board_surf.blit(winner_name_surf, (10, 20))
 
     def __draw_button(self, surface : pygame.Surface, player: int, center: (int,int), size:int,winning_button=False):
         if player == 1:
@@ -202,6 +201,7 @@ class GameScreen:
     def draw(self, events):
         win_condition = self.game_state.check_finished_game()
 
+        self.game_state.play_round()
         self.draw_game_board(win_condition)
 
         self.update_chiplocation(pygame.MOUSEBUTTONUP in [t.type for t in events])

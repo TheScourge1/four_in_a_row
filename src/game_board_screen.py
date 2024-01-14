@@ -37,9 +37,24 @@ class Button:
         self.rect = self.surf.get_rect()
         self.surf.blit(self.label, self.label.get_rect(center=self.surf.get_rect().center))
 
-    def draw(self, surf: pygame.Surface, location: tuple[int,int]):
-        self.rect = self.surf.get_rect(topleft=location)
-        surf.blit(self.surf, self.rect)
+        self.invisi_surf = pygame.Surface((width, height), pygame.SRCALPHA)
+        self.invisi_surf.fill(color)
+        self.invisi_surf.blit(self.surf, (0, 0), special_flags=pygame.BLEND_RGBA_SUB)
+        mask = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        pygame.draw.rect(mask, color, (0, 0, self.width, self.height), 0, border_radius=15)
+        self.invisi_surf.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+
+    def draw(self, surf: pygame.Surface, location: tuple[int,int],mouse_location=(-1,-1)):
+        if self.rect.collidepoint(mouse_location):
+            self.rect = self.invisi_surf.get_rect(topleft=location)
+            surf.blit(self.invisi_surf, self.rect)
+        else:
+            self.rect = self.surf.get_rect(topleft=location)
+            surf.blit(self.surf, self.rect)
+
+    def draw_invisi(self, surf: pygame.Surface, location: tuple[int, int]):
+        self.rect = self.invisi_surf.get_rect(topleft=location)
+        surf.blit(self.invisi_surf, self.rect)
 
 
 class GameScreen:
@@ -77,6 +92,7 @@ class GameScreen:
 
         self.exit_button = Button(BUTTON_COLOR,BUTTON_TEXT_COLOR,TEXT_FONTSIZE,150,50,"Exit")
         self.new_game_button = Button(BUTTON_COLOR, BUTTON_TEXT_COLOR, TEXT_FONTSIZE, 150, 50, "New Game")
+        self.reset_score_button = Button(BUTTON_COLOR, BUTTON_TEXT_COLOR, TEXT_FONTSIZE, 150, 50, "Reset Score")
 
 
     def draw_player_data(self):
@@ -177,10 +193,15 @@ class GameScreen:
 
 
     def draw_menu(self,events):
+        self.footer = pygame.Surface((self.screen.get_size()[0],FOOTER_HEIGHT),pygame.SRCALPHA)
+        self.footer.fill(FOOTER_COLOR)
+        mouse_pos = (pygame.mouse.get_pos()[0] - self.footer_location[0], pygame.mouse.get_pos()[1] - self.footer_location[1])
+
         height_offset = int((self.footer.get_rect().height-self.exit_button.height)/2)
         width_center = int((self.footer.get_rect().width-self.exit_button.width)/2)
-        self.exit_button.draw(self.footer,(width_center-100,height_offset))
-        self.new_game_button.draw(self.footer,(width_center+100,height_offset))
+        self.exit_button.draw(self.footer,(width_center-180,height_offset),mouse_pos)
+        self.new_game_button.draw(self.footer,(width_center,height_offset),mouse_pos)
+        self.reset_score_button.draw(self.footer, (width_center + 180, height_offset), mouse_pos)
 
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
@@ -190,7 +211,8 @@ class GameScreen:
                     exit()
                 elif self.new_game_button.rect.collidepoint(mouse_pos):
                     self.game_state.new_game()
-
+                elif self.reset_score_button.rect.collidepoint(mouse_pos):
+                    self.game_state.reset_score()
 
     def is_finished(self):
         return self.game_state.is_finished()

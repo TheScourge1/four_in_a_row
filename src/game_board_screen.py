@@ -1,6 +1,6 @@
 import pygame
 
-from game_logic import GameState
+from game_logic import GameState,PlayerType
 
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
@@ -10,7 +10,7 @@ FOOTER_COLOR = (0,0,0,50)
 SCORE_COLOR = "gold"
 
 TEXT_FONTSIZE = 35
-PLAYERNAME_FONTSIZE= 50
+PLAYERNAME_FONTSIZE= 45
 BUTTON_COLOR = "white"
 BUTTON_TEXT_COLOR = "white"
 
@@ -24,13 +24,13 @@ FOOTER_HEIGHT = 75
 
 
 class Button:
-    def __init__(self, color, text_color, text_size, width, height, text):
+    def __init__(self, color, text_color, width, height, text):
         self.color = color
         self.width = width
         self.height = height
         self.text = text
 
-        self.text_font = pygame.font.Font(None, text_size)
+        self.text_font = pygame.font.Font(None, int(height*0.7))
         self.label = self.text_font.render(text, False, text_color)
         self.surf = pygame.Surface((width,height),pygame.SRCALPHA)
         pygame.draw.rect(self.surf, color, (0, 0, width, height),2, border_radius=15)
@@ -52,9 +52,13 @@ class Button:
             self.rect = self.surf.get_rect(topleft=location)
             surf.blit(self.surf, self.rect)
 
-    def draw_invisi(self, surf: pygame.Surface, location: tuple[int, int]):
-        self.rect = self.invisi_surf.get_rect(topleft=location)
-        surf.blit(self.invisi_surf, self.rect)
+    def draw_inverse(self, surf: pygame.Surface, location: tuple[int, int],mouse_location=(-1,-1)):
+        if self.rect.collidepoint(mouse_location):
+            self.rect = self.invisi_surf.get_rect(topleft=location)
+            surf.blit(self.invisi_surf, self.rect)
+        else:
+            self.rect = self.invisi_surf.get_rect(topleft=location)
+            surf.blit(self.invisi_surf, self.rect)
 
 
 class GameScreen:
@@ -74,10 +78,11 @@ class GameScreen:
 
         self.screen = screen
         self.game_board_surf = pygame.Surface((CELL_SIZE * self.board_columns, CELL_SIZE * self.board_rows), pygame.SRCALPHA)
-        self.game_board_rect = self.game_board_surf.get_rect(bottomleft=((screen.get_width()-self.game_board_surf.get_width())/2, screen.get_size()[1] - FOOTER_HEIGHT))
+        self.game_board_rect = self.game_board_surf.get_rect(bottomleft=((screen.get_width()-self.game_board_surf.get_width())/2, screen.get_size()[1] - FOOTER_HEIGHT-10))
 
         self.above_game_board_surf = pygame.Surface((CELL_SIZE * self.board_columns, CELL_SIZE), pygame.SRCALPHA)
         self.above_game_board_rect = self.above_game_board_surf.get_rect(bottomleft=self.game_board_rect.topleft)
+        self.above_game_board_last_button_loc = (-1, -1)
 
         self.player_names_font = pygame.font.Font(None, PLAYERNAME_FONTSIZE)
 
@@ -90,14 +95,19 @@ class GameScreen:
         self.footer.fill(FOOTER_COLOR)
         self.footer_location = (0, self.screen.get_size()[1] - self.footer.get_height())
 
-        self.exit_button = Button(BUTTON_COLOR,BUTTON_TEXT_COLOR,TEXT_FONTSIZE,150,50,"Exit")
-        self.new_game_button = Button(BUTTON_COLOR, BUTTON_TEXT_COLOR, TEXT_FONTSIZE, 150, 50, "New Game")
-        self.reset_score_button = Button(BUTTON_COLOR, BUTTON_TEXT_COLOR, TEXT_FONTSIZE, 150, 50, "Reset Score")
+        self.exit_button = Button(BUTTON_COLOR,BUTTON_TEXT_COLOR,150,50,"Exit")
+        self.new_game_button = Button(BUTTON_COLOR, BUTTON_TEXT_COLOR,  150, 50, "New Game")
+        self.reset_score_button = Button(BUTTON_COLOR, BUTTON_TEXT_COLOR,  150, 50, "Reset Score")
+
+        self.p1_AI_button = Button(BUTTON_COLOR,BUTTON_TEXT_COLOR,75,25,"Computer")
+        self.p1_human_button = Button(BUTTON_COLOR, BUTTON_TEXT_COLOR, 75, 25, "Human")
+        self.p2_AI_button = Button(BUTTON_COLOR,BUTTON_TEXT_COLOR,75,25,"Computer")
+        self.p2_human_button = Button(BUTTON_COLOR, BUTTON_TEXT_COLOR, 75, 25, "Human")
 
 
     def draw_player_data(self):
-        self.player_1_surf = pygame.Surface((200, 60), pygame.SRCALPHA)
-        self.player_2_surf = pygame.Surface((200, 60), pygame.SRCALPHA)
+        self.player_1_surf = pygame.Surface((250, 60), pygame.SRCALPHA)
+        self.player_2_surf = pygame.Surface((250, 60), pygame.SRCALPHA)
 
         if self.game_state.player_turn == 1:
             player_1_name_surf = self.player_names_font.render(self.game_state.get_player_name(1), True, ACTIVE_PLAYER_NAME_COLOR)
@@ -107,17 +117,15 @@ class GameScreen:
             player_2_name_surf = self.player_names_font.render(self.game_state.get_player_name(2), True, ACTIVE_PLAYER_NAME_COLOR)
 
         player_1_score = self.text_font.render(f"Wins: {self.game_state.get_score(1)}",True,SCORE_COLOR)
-        player_1_score_rect = player_1_score.get_rect(midbottom=self.player_1_surf.get_rect().midbottom)
         player_2_score = self.text_font.render(f"Wins: {self.game_state.get_score(2)}",True,SCORE_COLOR)
-        player_2_score_rect = player_2_score.get_rect(midbottom=self.player_2_surf.get_rect().midbottom)
 
         self.__draw_button(self.player_1_surf, 1, (15, 15), 15)
         self.__draw_button(self.player_2_surf, 2, (15, 15), 15)
-        self.player_1_surf.blit(player_1_name_surf,(40,0))
-        self.player_1_surf.blit(player_1_score, player_1_score_rect)
+        self.player_1_surf.blit(player_1_name_surf,(40, 0))
+        self.player_1_surf.blit(player_1_score, (40, player_1_name_surf.get_height()+5))
 
         self.player_2_surf.blit(player_2_name_surf, (40, 0))
-        self.player_2_surf.blit(player_2_score, player_2_score_rect)
+        self.player_2_surf.blit(player_2_score, (40,player_2_name_surf.get_height()+5))
 
 
     def draw_game_board(self,win_condition:list[(int,int)]):
@@ -151,21 +159,25 @@ class GameScreen:
 
     def update_chiplocation(self, mousebutton_up:bool):
         self.above_game_board_surf.fill((0, 0, 0, 0))
+        if self.above_game_board_last_button_loc == (-1, -1):
+            if self.game_state.player_turn == 1:
+                self.above_game_board_last_button_loc = (CELL_SIZE // 2, CELL_SIZE // 2)
+            else:
+                self.above_game_board_last_button_loc = (6 * CELL_SIZE + CELL_SIZE // 2, CELL_SIZE // 2)
+
+
         if self.game_state.is_running() and self.game_state.human_player_move():
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            if mouse_y >= self.above_game_board_rect.topleft[1] and mouse_y <= self.above_game_board_rect.bottomleft[1]:
+            if mouse_y >= self.above_game_board_rect.topleft[1] and mouse_y <= self.game_board_rect.bottomleft[1]:
                 relative_x_loc = mouse_x - self.above_game_board_rect.topleft[0]
                 if relative_x_loc >=0 and relative_x_loc <= self.above_game_board_rect.width:
                     active_col = relative_x_loc // CELL_SIZE
                     if mousebutton_up:
                         self.game_state.drop_button(active_col)
-                    self.__draw_button(self.above_game_board_surf, self.game_state.player_turn,(active_col * CELL_SIZE + CELL_SIZE // 2,CELL_SIZE // 2), CELL_SIZE // 2 - 5)
-            else:
-                if self.game_state.player_turn == 1:
-                    self.__draw_button(self.above_game_board_surf, self.game_state.player_turn,(CELL_SIZE // 2,CELL_SIZE // 2), CELL_SIZE // 2 - 5)
-                else:
-                    self.__draw_button(self.above_game_board_surf, self.game_state.player_turn,
-                                       (6*CELL_SIZE+CELL_SIZE // 2, CELL_SIZE // 2), CELL_SIZE // 2 - 5)
+                        self.above_game_board_last_button_loc == (-1, -1)
+                    self.above_game_board_last_button_loc = (active_col * CELL_SIZE + CELL_SIZE // 2,CELL_SIZE // 2)
+
+            self.__draw_button(self.above_game_board_surf, self.game_state.player_turn,self.above_game_board_last_button_loc, CELL_SIZE // 2 - 5)
 
         elif self.game_state.is_finished():
             self.above_game_board_surf.blit(self.cup_image,(0,0))
@@ -203,6 +215,22 @@ class GameScreen:
         self.new_game_button.draw(self.footer,(width_center,height_offset),mouse_pos)
         self.reset_score_button.draw(self.footer, (width_center + 180, height_offset), mouse_pos)
 
+        x_offset = 15
+        if self.game_state.get_player_type(1) == PlayerType.HUMAN:
+            self.p1_human_button.draw_inverse(self.footer,(x_offset, 7), mouse_pos)
+            self.p1_AI_button.draw(self.footer, (x_offset, 42), mouse_pos)
+        else:
+            self.p1_human_button.draw(self.footer,(x_offset, 7), mouse_pos)
+            self.p1_AI_button.draw_inverse(self.footer, (x_offset, 42), mouse_pos)
+
+        x_offset = self.footer.get_width()-self.p2_human_button.width-x_offset
+        if self.game_state.get_player_type(2) == PlayerType.HUMAN:
+            self.p2_human_button.draw_inverse(self.footer,(x_offset, 7), mouse_pos)
+            self.p2_AI_button.draw(self.footer, (x_offset, 42), mouse_pos)
+        else:
+            self.p2_human_button.draw(self.footer,(x_offset, 7), mouse_pos)
+            self.p2_AI_button.draw_inverse(self.footer, (x_offset, 42), mouse_pos)
+
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_pos = (pygame.mouse.get_pos()[0]-self.footer_location[0], pygame.mouse.get_pos()[1]-self.footer_location[1])
@@ -213,6 +241,14 @@ class GameScreen:
                     self.game_state.new_game()
                 elif self.reset_score_button.rect.collidepoint(mouse_pos):
                     self.game_state.reset_score()
+                elif self.p1_human_button.rect.collidepoint(mouse_pos):
+                    self.game_state.set_player_type(1, PlayerType.HUMAN)
+                elif self.p1_AI_button.rect.collidepoint(mouse_pos):
+                    self.game_state.set_player_type(1, PlayerType.AI_LEVEL_1)
+                elif self.p2_human_button.rect.collidepoint(mouse_pos):
+                    self.game_state.set_player_type(2, PlayerType.HUMAN)
+                elif self.p2_AI_button.rect.collidepoint(mouse_pos):
+                    self.game_state.set_player_type(2, PlayerType.AI_LEVEL_1)
 
     def is_finished(self):
         return self.game_state.is_finished()

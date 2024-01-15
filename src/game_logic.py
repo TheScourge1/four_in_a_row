@@ -23,9 +23,8 @@ class GameState:
     ai_think_time = 60
     player_turn = 1
 
-    __player_types = [PlayerType.HUMAN, PlayerType.HUMAN]
+    __player_types = [PlayerType.HUMAN, PlayerType.AI_LEVEL_1]
     __player_score = [0, 0]
-    __player_names = ["Player 1", "Player 2"]
 
     game_state = States.RUNNING
     button_drop_time = 0
@@ -53,11 +52,18 @@ class GameState:
             raise Exception(f"invalid player id: {player_id}")
         self.__player_types[player_id - 1] = player_type
 
+
+    def get_player_type(self,player_id) -> PlayerType:
+        return self.__player_types[player_id-1]
+
     def get_score(self, player_id):
         return self.__player_score[player_id - 1]
 
     def get_player_name(self, player_id):
-        return self.__player_names[player_id - 1]
+        if self.get_player_type(player_id ) == PlayerType.HUMAN:
+            return f"Human {player_id}"
+        else:
+            return f"Computer {player_id}"
 
     def check_finished_game(self) -> list[(int, int)]:
         win_range = self.__find_four_in_a_row(self.board)
@@ -82,8 +88,8 @@ class GameState:
 
     # execute computer move
     def play_round(self):
-        if (self.game_state == States.RUNNING and not self.human_player_move() and
-                self.button_drop_time != 0 and time.time() - self.button_drop_time > self.ai_think_time):
+        if (self.game_state == States.RUNNING and not self.human_player_move() ):
+                #and self.button_drop_time != 0 and (time.time() - self.button_drop_time) > self.ai_think_time):
             next_move = self.find_winning_col(self.player_turn)
             if next_move < 0:
                 potential_moves = [col for col in range(0, len(self.board[0])) if self.board[0, col] == 0]
@@ -96,7 +102,7 @@ class GameState:
         self.__player_score=[0,0]
 
     def find_winning_col(self, player_id: int) -> int:
-        for col in range(0, self.board[0]):
+        for col in range(0, len(self.board[0])):
             row = self.__get_drop_location(col)
             if row > 0:
                 self.board[row][col] = player_id

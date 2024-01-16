@@ -72,8 +72,8 @@ class GameScreen:
 
     def __init__(self, screen: pygame.Surface):
         self.text_font = pygame.font.Font(None, TEXT_FONTSIZE)
-        self.background = pygame.image.load("../img/cloud_background.jpg").convert()
-        self.cup_image = pygame.image.load("../img/cup.png").convert_alpha()
+        self.background = pygame.image.load("./img/cloud_background.jpg").convert()
+        self.cup_image = pygame.image.load("./img/cup.png").convert_alpha()
         self.cup_image = pygame.transform.scale(self.cup_image, (self.cup_image.get_size()[0]/6, self.cup_image.get_size()[1]/6))
 
         self.screen = screen

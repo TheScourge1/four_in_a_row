@@ -9,7 +9,7 @@ pygame.init()
 screen = pygame.display.set_mode(SCREEN_SIZE)
 screen.fill('light gray')
 pygame.display.set_caption("4 in a row")
-pygame_icon = pygame.image.load("../img/game_icon.jpg").convert()
+pygame_icon = pygame.image.load("./img/game_icon.jpg").convert()
 pygame.display.set_icon(pygame_icon)
 clock = pygame.time.Clock()
 
@@ -27,7 +27,4 @@ while True:
 
     pygame.display.update()
     clock.tick(60)
-
-
-
 

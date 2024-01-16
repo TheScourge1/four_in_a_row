@@ -101,7 +101,7 @@ class GameState:
         self.new_game()
         self.__player_score=[0,0]
 
-    def find_winning_col(self, player_id: int) -> int:
+    def find_winning_col(self, player_id: int,depth = 0) -> int:
         for col in range(0, len(self.board[0])):
             row = self.__get_drop_location(col)
             if row > 0:
@@ -110,6 +110,9 @@ class GameState:
                 self.board[row][col] = 0
                 if win_range:
                     return col
+        if depth == 0:
+            opponent_win_location = self.find_winning_col(3-player_id,depth+1)
+            return opponent_win_location
         return -1
 
     def __find_four_in_a_row(self, grid: np.ndarray):
